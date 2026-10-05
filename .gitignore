@@ -2,3 +2,5 @@
 /.mygo/
 mygo_windows_*.syso
 /calc
+/portmaster/dist/
+/portmaster/.cache/

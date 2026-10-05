@@ -1,0 +1,31 @@
+# Calc — controls for an RK3326 handheld (R36S), via gptokeyb.
+# D-pad or left stick: move the pointer. A or R1: click. B: Escape (C).
+# X: Backspace (erase). Y or Start: Enter (=). L1: slow pointer.
+# Start+Select: quit.
+
+up = mouse_movement_up
+down = mouse_movement_down
+left = mouse_movement_left
+right = mouse_movement_right
+dpad_mouse_step = 10
+
+left_analog_up = mouse_movement_up
+left_analog_down = mouse_movement_down
+left_analog_left = mouse_movement_left
+left_analog_right = mouse_movement_right
+
+a = mouse_left
+r1 = mouse_left
+b = escape
+x = backspace
+y = enter
+start = enter
+select = escape
+l1 = mouse_slow
+
+mouse_scale = 8192
+mouse_slow_scale = 40
+deadzone_mode = scaled_radial
+deadzone = 2200
+deadzone_scale = 6
+mouse_delay = 16

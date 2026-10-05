@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"runtime"
 
 	"github.com/egoist/mygo"
@@ -29,7 +30,15 @@ func openCalculatorWindow() {
 		MinWidth:  300,
 		MinHeight: 480,
 		StateKey:  "calc",
-		Content:   ui.View(a.view),
+		// CALC_FULLSCREEN=1 opens full screen without decorations: the
+		// PortMaster port for the R36S runs the window under Weston's
+		// kiosk shell, where a title bar would only waste the 640×480
+		// screen — and GTK's own title bar looks up window-control icons
+		// a minimal runtime may not have. Unset (the desktop default),
+		// nothing changes.
+		FullScreen: os.Getenv("CALC_FULLSCREEN") == "1",
+		Frameless:  os.Getenv("CALC_FULLSCREEN") == "1",
+		Content:    ui.View(a.view),
 	})
 }
 
@@ -116,9 +125,10 @@ func calcButton(c *ui.Context, label string, kind btnKind, fontSize float32, bol
 
 // windowsIcons draws the icons with shapes on Windows: Segoe UI has no
 // glyphs for "⌫" (U+232B) and "⧉" (U+29C9), and the system font fallback
-// may not find them — they showed up as boxes. On other systems the plain
-// glyph is used.
-var windowsIcons = runtime.GOOS == "windows"
+// may not find them — they showed up as boxes. The handheld port sets
+// CALC_DRAWN_ICONS=1 for the same reason: its minimal font set (DejaVu)
+// has ⌫ but not ⧉. On other systems the plain glyph is used.
+var windowsIcons = runtime.GOOS == "windows" || os.Getenv("CALC_DRAWN_ICONS") == "1"
 
 // drawBackspace draws the ⌫ key as a rounded box with "×"
 // (U+00D7, present in Segoe UI).

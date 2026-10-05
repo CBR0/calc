@@ -1,0 +1,30 @@
+Libraries bundled in calc/libs.aarch64
+=====================================
+
+These are unmodified runtime libraries (shared objects) taken from
+Ubuntu 20.04 LTS (focal) arm64 packages, installed next to the app so it
+can run on systems without GTK3. They are distributed under their own
+licenses; the main ones:
+
+- GTK+ 3 (libgtk-3-0, LGPL-2.1-or-later)
+- GLib, GObject, GIO, GModule (libglib2.0-0, LGPL-2.1-or-later)
+- GDK-Pixbuf (libgdk-pixbuf2.0-0, LGPL-2.1-or-later)
+- ATK / ATK bridge (libatk1.0-0, libatk-bridge2.0-0, LGPL-2.1-or-later)
+- Cairo (libcairo2, libcairo-gobject2, LGPL-2.1-or-later / MPL-1.1)
+- Pango (libpango-1.0-0, libpangocairo-1.0-0, libpangoft2-1.0-0, LGPL-2.1-or-later)
+- HarfBuzz (libharfbuzz0b, MIT)
+- Fontconfig (libfontconfig1, MIT-like)
+- FreeType (libfreetype6, FTL/GPL-2.0)
+- and their dependencies (fribidi, graphite2, thai, datrie, expat, png,
+  pixman, pcre, pcre2, ffi, zlib, lzma, lz4, zstd, gcrypt, gpg-error,
+  systemd, dbus, atspi, selinux, mount, blkid, uuid, cap, brotli, jpeg,
+  tiff, webp, EGL/GLVND stubs for linkage).
+
+The full license text of each library ships in its Ubuntu package under
+/usr/share/doc/<package>/copyright, and the packages can be fetched from
+http://ports.ubuntu.com/ubuntu-ports/ (suite: focal, component: main and
+universe, architecture: arm64). The exact files are pinned by
+portmaster/fetch-libs.py in the source repository.
+
+The DejaVu fonts in calc/fonts are (c) Bitstream, with the DejaVu
+changes in the public domain; see LICENSE.dejavu.txt.
