@@ -1,0 +1,11 @@
+{
+  "name": "Calc",
+  "identifier": "com.cbr0.calc",
+  "version": "0.1.0",
+  "out": "build",
+  "linux": {
+    "comment": "Windows-style simple calculator",
+    "categories": ["Utility", "Calculator"],
+    "command": "calc"
+  }
+}
