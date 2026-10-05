@@ -83,7 +83,7 @@ Windows installer (`Calc Setup <version>.exe`) is only made when NSIS
 
 Pushing a tag `vX.Y.Z` runs
 [.github/workflows/release.yml](.github/workflows/release.yml), which builds
-Linux (amd64/arm64) and Windows (amd64/arm64) and uploads the artifacts to a
+Linux (amd64/arm64) and Windows (amd64) and uploads the artifacts to a
 draft release. Review the draft and publish it: the one-line installer fetches
 the latest published release through the GitHub API.
 

@@ -29,7 +29,7 @@ jobs:
       matrix:
         include:
           - { name: Linux, os: ubuntu-latest, platform: "linux/amd64,linux/arm64" }
-          - { name: Windows, os: ubuntu-latest, platform: "windows/amd64,windows/arm64" }
+          - { name: Windows, os: ubuntu-latest, platform: "windows/amd64" }
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -40,9 +40,23 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y nsis
       - name: Build
         run: go tool mygo build -platform "${{ matrix.platform }}"
+      - name: Collect release files
+        # Only the artifacts people download, without the per-arch files that
+        # share a name (calc.png, icon.png, the raw binary): two of them in
+        # one release would collide, as GitHub asset names are unique.
+        run: |
+          mkdir -p release
+          for dir in build/*/; do
+            for f in "$dir"*.tar.gz "$dir"*.deb "$dir"*.exe; do
+              [ -e "$f" ] || continue
+              cp "$f" release/
+            done
+          done
+          # One install.sh is enough: the same in every Linux build.
+          if [ -f build/linux-amd64/install.sh ]; then
+            cp build/linux-amd64/install.sh release/
+          fi
       - name: Upload to the draft release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
-            --clobber build/*/*
+        run: gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --clobber release/*
