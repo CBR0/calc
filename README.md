@@ -48,7 +48,7 @@ Download from [Releases](https://github.com/CBR0/calc/releases):
   and type directly into it; pasted numbers in either format are accepted
   (`247.227915`, `6,306.04879`)
 - Thousands grouping in the display and in the history, as in Windows
-- Decimal separator switch in the toolbar: `1.5` (US, default) or `1,5`
+- Decimal separator switch in Settings (gear icon): `1.5` (US, default) or `1,5`
   (BR); the decimal key and the results follow it
 - Physical keyboard works by character, so any layout works (ABNT2, US,
   numeric): `0-9`, `.`/`,`, `+ - * / % =`, `Enter` (=), `Backspace`/`Delete`,

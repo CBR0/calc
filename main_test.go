@@ -559,6 +559,10 @@ func TestViewSepToggle(t *testing.T) {
 	if a.calc.sep != '.' {
 		t.Fatalf("default sep = %q, want '.'", a.calc.sep)
 	}
+	// The separator switch lives in the settings modal now.
+	if err := tt.Click("Settings"); err != nil {
+		t.Fatalf("open settings: %v", err)
+	}
 	if err := tt.Click("1,5"); err != nil {
 		t.Fatalf("click sep BR: %v", err)
 	}
@@ -570,6 +574,56 @@ func TestViewSepToggle(t *testing.T) {
 	}
 	if a.calc.sep != '.' {
 		t.Fatalf("sep = %q, want '.'", a.calc.sep)
+	}
+}
+
+func TestViewSettingsModal(t *testing.T) {
+	a := newApp()
+	tt := ui.NewTester(a.view, 340, 580)
+	// Closed at first: no settings content on screen.
+	if tt.HasText("Decimal separator") {
+		t.Fatalf("settings visible before opening in %q", tt.Texts())
+	}
+	if err := tt.Click("Settings"); err != nil {
+		t.Fatalf("open settings: %v", err)
+	}
+	for _, want := range []string{"Settings", "Decimal separator", "Project on GitHub"} {
+		if !tt.HasText(want) {
+			t.Fatalf("missing %q in %q", want, tt.Texts())
+		}
+	}
+	// The GitHub icon opens the project page.
+	if err := tt.Click("GitHub"); err != nil {
+		t.Fatalf("click GitHub: %v", err)
+	}
+	opened := tt.OpenedURLs()
+	if len(opened) != 1 || opened[0] != "https://github.com/CBR0/calc" {
+		t.Fatalf("opened URLs = %q, want the project page", opened)
+	}
+	// The Close button dismisses the modal.
+	if err := tt.Click("Close"); err != nil {
+		t.Fatalf("close settings: %v", err)
+	}
+	if tt.HasText("Decimal separator") {
+		t.Fatalf("settings still visible after Close in %q", tt.Texts())
+	}
+}
+
+func TestViewSettingsEscapeKeepsEntry(t *testing.T) {
+	a := newApp()
+	tt := ui.NewTester(a.view, 340, 580)
+	a.calc.UserEdit("12", "")
+	a.edit = a.calc.Display()
+	if err := tt.Click("Settings"); err != nil {
+		t.Fatalf("open settings: %v", err)
+	}
+	// Escape dismisses the modal instead of clearing the calculation.
+	tt.Key(0, ui.KeyEscape)
+	if tt.HasText("Decimal separator") {
+		t.Fatalf("settings still visible after Escape in %q", tt.Texts())
+	}
+	if a.calc.Display() != "12" {
+		t.Fatalf("display = %q, want 12 (Escape must not clear)", a.calc.Display())
 	}
 }
 

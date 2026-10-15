@@ -15,6 +15,8 @@ type app struct {
 	editGen int    // display generation: new editor (caret at the end) on each rewrite of ours
 	// sepIdx is the decimal separator in the UI: 0 = "1,5" (BR), 1 = "1.5" (US).
 	sepIdx int
+	// settingsOpen shows the settings modal (decimal separator, project link).
+	settingsOpen bool
 }
 
 func newApp() *app {
@@ -48,7 +50,9 @@ func openCalculatorWindow() {
 // numeric): the engine reacts to the character, not to the key. Enter (=)
 // arrives via Submitted().
 func (a *app) handleKeys(c *ui.Context) {
-	if c.Shortcut(0, ui.KeyEscape) {
+	// While the settings modal is open, Escape dismisses it (the modal
+	// handles that itself) instead of clearing the calculation.
+	if !a.settingsOpen && c.Shortcut(0, ui.KeyEscape) {
 		a.calc.ClearAll()
 	}
 	// New window: Ctrl+N
@@ -130,6 +134,16 @@ func calcButton(c *ui.Context, label string, kind btnKind, fontSize float32, bol
 // has ⌫ but not ⧉. On other systems the plain glyph is used.
 var windowsIcons = runtime.GOOS == "windows" || os.Getenv("CALC_DRAWN_ICONS") == "1"
 
+// githubURL is the project page linked from the settings modal.
+const githubURL = "https://github.com/CBR0/calc"
+
+// gearIcon opens the settings; githubIcon links to the project page.
+// They are SVGs (not font glyphs) so they render on Windows and on minimal
+// handheld font sets alike — see windowsIcons above.
+var gearIcon = ui.MustParseSVG([]byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`))
+
+var githubIcon = ui.MustParseSVG([]byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>`))
+
 // drawBackspace draws the ⌫ key as a rounded box with "×"
 // (U+00D7, present in Segoe UI).
 func drawBackspace(c *ui.Context, col ui.Color) {
@@ -184,20 +198,25 @@ func (a *app) view(c *ui.Context) {
 	c0 := a.calc
 
 	ui.Column(c).Fill().Padding(12).Gap(6).Children(func() {
-		// Top bar: decimal separator + new window
+		// Top bar: settings + new window (the decimal separator lives in
+		// the settings modal now).
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-			seg := ui.Segmented(c, &a.sepIdx, "1,5", "1.5")
-			seg.Label("Decimal separator").Tooltip("Dot (US) or comma (BR)")
-			if seg.Changed() {
-				if a.sepIdx == 0 {
-					c0.SetSep(',')
-				} else {
-					c0.SetSep('.')
-				}
-				a.syncDisplay(c)
+			settingsBtn := ui.Box(c).Center().Radius(t.Radius).Cursor(ui.CursorPointer).Padding(6, 10).Tooltip("Settings")
+			settingsBtn.Label("Settings")
+			if settingsBtn.Hovered() {
+				settingsBtn.Background(t.SurfaceHover)
+			} else {
+				settingsBtn.Background(t.Surface)
+			}
+			settingsBtn.Children(func() {
+				ui.Icon(c, gearIcon).Size(15, 15).TextColor(t.Text)
+			})
+			if settingsBtn.Clicked() {
+				a.settingsOpen = true
 			}
 			ui.Spacer(c)
 			newWin := ui.Box(c).Center().Radius(t.Radius).Cursor(ui.CursorPointer).Padding(6, 10).Tooltip("New window (Ctrl+N)")
+			newWin.Label("New window")
 			if newWin.Hovered() {
 				newWin.Background(t.SurfaceHover)
 			} else {
@@ -231,9 +250,14 @@ func (a *app) view(c *ui.Context) {
 		// editor with the caret at the end — without it the caret lags on
 		// grouping and the digits come out of order ("12345"→"12354").
 		// Plain typing does not rewrite.
-		ui.Box(c).Key(a.editGen).FillWidth().Children(func() {
+		ui.Box(c.Key(a.editGen)).FillWidth().Children(func() {
 			disp := ui.TextAreaBase(c, &a.edit).Label("Result").AutoFocus().NoWrap()
-			disp.Focus() // focus always on the display: the physical keyboard lands here
+			// Focus always on the display so the physical keyboard lands
+			// here — except while the settings modal is open, so its
+			// controls keep the focus.
+			if !a.settingsOpen {
+				disp.Focus()
+			}
 			// Enter in the display = "=" (consumes it before the editor, which
 			// would break the line).
 			disp.HandleInput(func(ev ui.InputEvent) bool {
@@ -363,6 +387,66 @@ func (a *app) view(c *ui.Context) {
 					c0.Equals()
 				}
 			})
+		})
+	})
+
+	a.settingsModal(c)
+}
+
+// settingsModal shows the app settings over a dimmed window: the decimal
+// separator switch and a link to the project on GitHub. Clicking outside
+// it or pressing Escape dismisses it.
+func (a *app) settingsModal(c *ui.Context) {
+	t := c.Theme()
+	c0 := a.calc
+	ui.Modal(c, &a.settingsOpen, func() {
+		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+			ui.Text(c, "Settings").Bold().FontSize(17)
+			ui.Spacer(c)
+			closeBtn := ui.Box(c).Center().Radius(t.Radius).Cursor(ui.CursorPointer).Padding(4, 10).Tooltip("Close")
+			closeBtn.Label("Close")
+			if closeBtn.Hovered() {
+				closeBtn.Background(t.SurfaceHover)
+			} else {
+				closeBtn.Background(t.Surface)
+			}
+			closeBtn.Children(func() {
+				ui.Text(c, "×").FontSize(15).TextColor(t.Text)
+			})
+			if closeBtn.Clicked() {
+				a.settingsOpen = false
+			}
+		})
+		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+			ui.Text(c, "Decimal separator").FontSize(14)
+			ui.Spacer(c)
+			seg := ui.Segmented(c, &a.sepIdx, "1,5", "1.5")
+			seg.Label("Decimal separator").Tooltip("Dot (US) or comma (BR)")
+			if seg.Changed() {
+				if a.sepIdx == 0 {
+					c0.SetSep(',')
+				} else {
+					c0.SetSep('.')
+				}
+				a.syncDisplay(c)
+			}
+		})
+		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+			ui.Text(c, "Project on GitHub").FontSize(14)
+			ui.Spacer(c)
+			gh := ui.Box(c).Center().Radius(t.Radius).Cursor(ui.CursorPointer).Padding(6, 10).Tooltip("Open the project on GitHub")
+			gh.Label("GitHub")
+			if gh.Hovered() {
+				gh.Background(t.SurfaceHover)
+			} else {
+				gh.Background(t.Surface)
+			}
+			gh.Children(func() {
+				ui.Icon(c, githubIcon).Size(16, 16).TextColor(t.Text)
+			})
+			if gh.Clicked() {
+				c.OpenURL(githubURL)
+			}
 		})
 	})
 }
